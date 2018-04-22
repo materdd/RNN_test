@@ -5,6 +5,8 @@ import pandas_datareader.data as web
  
 import matplotlib.pyplot as plt
 
+import sys
+
 from sklearn.preprocessing import MinMaxScaler
 
 import network
@@ -15,6 +17,8 @@ from chainer import Chain, Variable, datasets, optimizers
 from chainer import report, training
 from chainer.training import extensions
 import chainer.cuda
+
+flg_MT = 1
 
 start = dt.date(2016,1,1)
 end = dt.date(2017,9,20)
@@ -32,20 +36,40 @@ data = scaler.fit_transform(data)
 print(data.shape)
 
 x = []
+x_long = []
+x_short = []
 t = []
+
+if flg_MT == 0:
+    n_skip = 1
+elif flg_MT == 1:
+    n_skip = 3
 
 N = len(df)
 M = 25
-for n in range(M,N):
-  #_x = df['close'][n-M:n]
-  #_t = df['close'][n]
-  _x = data[n-M:n, :]
-  _t = data[n, 1]
-  x.append(_x)
-  t.append(_t)
- 
-x = np.array(x, dtype = np.float32)
-t = np.array(t, dtype = np.float32).reshape(len(t),1)
+
+for n in range(M*n_skip,N):
+    if flg_MT == 0:
+        _x = data[n-M:n, :]
+        _t = data[n, 1]
+        x.append(_x)
+        t.append(_t)
+    elif flg_MT == 1:
+        _x_temp = data[n-M*n_skip:n, :] # all data
+        _x_short = [np.array(_x_temp[i*n_skip]) for i in range(M)]
+        _x_long = [np.array(_x_temp[i*n_skip:(i+1)*n_skip]).mean(axis=0) for i in range(M)]
+        _t = data[n, 1]
+        x_long.append(_x_long)
+        x_short.append(_x_short)
+    
+if flg_MT == 0:
+    x = np.array(x, dtype = np.float32)
+    t = np.array(t, dtype = np.float32).reshape(len(t),1)
+elif flg_MT == 1:
+    x_short = np.array(x_short, dtype = np.float32)
+    x_long = np.array(x_long, dtype = np.float32)
+    x = list(zip(x_short, x_long))
+    t = np.array(t, dtype = np.float32).reshape(len(t),1)
  
 # 訓練：60%, 検証：40%で分割する
 n_train = int(len(x) * 0.6)

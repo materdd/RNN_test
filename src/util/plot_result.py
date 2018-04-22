@@ -13,7 +13,9 @@ def plot():
     plt.plot(loss_train, label='train')
     plt.plot(loss_test,  label='test')
     plt.legend()
-    plt.show()
+    #plt.show()
+
+    plt.savefig("./result/accuracy.png")
 
 if __name__ == '__main__':
     plot()
