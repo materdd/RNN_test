@@ -56,19 +56,23 @@ for n in range(M*n_skip,N):
         t.append(_t)
     elif flg_MT == 1:
         _x_temp = data[n-M*n_skip:n, :] # all data
-        _x_short = [np.array(_x_temp[i*n_skip]) for i in range(M)]
+        #_x_short = [np.array(_x_temp[i*n_skip]) for i in range(M)]
+        _x_short = np.array(data[n-M:n,:])
         _x_long = [np.array(_x_temp[i*n_skip:(i+1)*n_skip]).mean(axis=0) for i in range(M)]
         _t = data[n, 1]
         x_long.append(_x_long)
         x_short.append(_x_short)
-    
+        t.append(_t)
+
+
 if flg_MT == 0:
     x = np.array(x, dtype = np.float32)
     t = np.array(t, dtype = np.float32).reshape(len(t),1)
 elif flg_MT == 1:
     x_short = np.array(x_short, dtype = np.float32)
     x_long = np.array(x_long, dtype = np.float32)
-    x = list(zip(x_short, x_long))
+    #x = list(zip(x_short, x_long))
+    x = np.concatenate((x_short, x_long), axis=2)
     t = np.array(t, dtype = np.float32).reshape(len(t),1)
  
 # 訓練：60%, 検証：40%で分割する
@@ -80,7 +84,10 @@ train, test = chainer.datasets.split_dataset(dataset, n_train)
 np.random.seed(1)
  
 # モデルの宣言
-model = network.RNN(30, 1)
+if flg_MT == 0:
+    model = network.RNN(30, 1)
+elif flg_MT == 1:
+    model = network.RNN_MT(30, 1)
  
 # GPU対応
 chainer.cuda.get_device(0).use()

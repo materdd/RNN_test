@@ -8,13 +8,11 @@ from chainer.training import extensions
 import chainer.cuda
  
 class RNN(Chain):
-    def __init__(self, n_units, n_output, train=1):
+    def __init__(self, n_units, n_output):
         super().__init__()
         with self.init_scope():
             self.l1 = L.LSTM(None, n_units)
             self.l2 = L.Linear(None, n_output)
-
-        self.train = train
         
     def reset_state(self):
         self.l1.reset_state()
@@ -27,23 +25,25 @@ class RNN(Chain):
         return loss
         
     def predict(self, x):
-        if self.train:
+        if chainer.config.train:
             h1 = F.dropout(self.l1(x),ratio = 0.5)
         else:
             h1 = self.l1(x)
         return self.l2(h1)
 
 class RNN_MT(Chain):
-    def __init__(self, n_units, n_output, train=1):
+    def __init__(self, n_units, n_output):
         super().__init__()
         with self.init_scope():
-            self.l1 = L.LSTM(None, n_units)
+            self.l1_s = L.LSTM(None, n_units)
+            self.l1_l = L.LSTM(None, n_units)
             self.l2 = L.Linear(None, n_output)
 
-        self.train = train
+        #self.train = train
         
     def reset_state(self):
-        self.l1.reset_state()
+        self.l1_s.reset_state()
+        self.l1_l.reset_state()
  
         
     def __call__(self, x, t):
@@ -53,10 +53,19 @@ class RNN_MT(Chain):
         return loss
         
     def predict(self, x):
-        if self.train:
-            h1 = F.dropout(self.l1(x),ratio = 0.5)
+        #x_s = x[:,:,0:2]
+        #x_l = x[:,:,2:4]
+        x_s = x
+        x_l = x
+        
+        if chainer.config.train:
+            h1_s = F.dropout(self.l1_s(x_s),ratio = 0.5)
+            h1_l = F.dropout(self.l1_l(x_l),ratio = 0.5)
+            h1 = F.concat((h1_s, h1_l), axis=1)
         else:
-            h1 = self.l1(x)
+            h1_s = self.l1_s(x_s)
+            h1_l = self.l1_l(x_l)
+            h1 = F.concat((h1_s, h1_l), axis=1)
         return self.l2(h1)
 
 
