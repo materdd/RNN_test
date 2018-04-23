@@ -87,7 +87,8 @@ np.random.seed(1)
 if flg_MT == 0:
     model = network.RNN(30, 1)
 elif flg_MT == 1:
-    model = network.RNN_MT(30, 1)
+    #model = network.RNN_MT(30, 1)
+    model = network.RNN_MT_ATTENTION(30, 1)
  
 # GPU対応
 chainer.cuda.get_device(0).use()
